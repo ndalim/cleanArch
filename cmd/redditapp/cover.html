@@ -1,0 +1,277 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>redditapp: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">redditapp/cmd/redditapp/main.go (9.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "database/sql"
+        "encoding/json"
+        "errors"
+        "flag"
+        "fmt"
+        "github.com/gomodule/redigo/redis"
+        "github.com/gorilla/mux"
+        "io"
+        "net/http"
+        "os"
+        "redditapp/pkg/auth/repo"
+        mw "redditapp/pkg/middleware"
+        ursql "redditapp/pkg/user/repo/mysql"
+
+        "go.uber.org/zap"
+
+        ud "redditapp/pkg/auth/delivery"
+        cd "redditapp/pkg/comment/delivery"
+        pd "redditapp/pkg/post/delivery"
+
+        uuc "redditapp/pkg/auth/usecase"
+        cuc "redditapp/pkg/comment/usecase"
+        puc "redditapp/pkg/post/usecase"
+
+        cr "redditapp/pkg/comment/repo"
+        pr "redditapp/pkg/post/repo"
+        //ur "redditapp/pkg/user/repo"
+
+        _ "github.com/go-sql-driver/mysql"
+)
+
+var (
+        AppStartError = errors.New("Application start error")
+)
+
+type configData struct {
+        Auth_ttl        int64  `json:"auth_ttl"`
+        Auth_salt       string `json:"auth_salt"`
+        Auth_jwt_secret string `json:"auth_jwt_secret"`
+        Redis_path      string `json:"redis_path"`
+}
+
+func getConfig() (*configData, error) <span class="cov0" title="0">{
+
+        configPath := flag.String("config", "../../config/config.json", "server config")
+        cf, err := os.Open(*configPath)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">cr := io.Reader(cf)
+        confData, err := io.ReadAll(cr)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">conf := &amp;configData{}
+        err = json.Unmarshal(confData, conf)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return conf, nil</span>
+}
+
+func NewLogger() (*zap.SugaredLogger, error) <span class="cov8" title="1">{
+
+        rawJSON := []byte(`{
+          "level": "debug",
+          "encoding": "json",
+          "outputPaths": ["stdout", "../../logs/log"],
+          "errorOutputPaths": ["stderr"],
+          "initialFields": {},
+          "encoderConfig": {
+            "messageKey": "message",
+            "levelKey": "level",
+            "levelEncoder": "lowercase"
+          }
+        }`)
+
+        var cfg zap.Config
+        if err := json.Unmarshal(rawJSON, &amp;cfg); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">logger, err := cfg.Build()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return logger.Sugar(), nil</span>
+
+}
+
+func main() <span class="cov0" title="0">{
+
+        conf, err := getConfig()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Println(err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">logger, err := NewLogger()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Println(err)
+                return
+        }</span>
+        <span class="cov0" title="0">defer logger.Sync()
+
+        userDB, err := sql.Open("mysql", "root:123@tcp(localhost:3306)/reddit")
+        defer userDB.Close()
+
+        authDB, err := redis.DialURL(conf.Redis_path)
+        defer authDB.Close()
+
+        //userRepo := ur.NewUserRepoMem()
+        userRepo := ursql.NewUserRepoMysql(userDB)
+
+        postRepo := pr.NewPostRepoMem()
+        commentRepo := cr.NewCommentRepoMem()
+
+        authRepo := repo.NewAuthRepoRedis(authDB, conf.Auth_jwt_secret, conf.Auth_ttl)
+        //authRepo := repo.NewAuthRepoMem(conf.Auth_jwt_secret, conf.Auth_ttl)
+
+        auth := uuc.NewAuthUsecase(userRepo, authRepo, conf.Auth_salt)
+        authHandle := ud.NewAuthHandler(auth, userRepo)
+
+        comment := cuc.NewCommentUsecase(commentRepo)
+        commentHandle := cd.NewCommentHandle(comment)
+
+        post := puc.NewPostUsecase(postRepo)
+        postHandle := pd.NewPostHandle(post, comment)
+
+        //fmt.Println(authHandle, commentHandle, postHandle)
+        //
+        //basicMux := http.NewServeMux()
+        //basicMux.Handle("/", http.FileServer(http.Dir("../../template")))
+        //basicMux.Handle("/static/", http.FileServer(http.Dir("../../template")))
+
+        basicMux := mux.NewRouter()
+        basicMux.Handle("/", http.FileServer(http.Dir("../../template")))
+        basicMux.Handle("/static", http.FileServer(http.Dir("../../template")))
+
+        basicMux.HandleFunc("/api/login", authHandle.SignIn).Methods("POST")
+        basicMux.HandleFunc("/api/register", authHandle.SignUp).Methods("POST")
+
+        basicMux.HandleFunc("/api/user/{login}", postHandle.GetByUser).Methods("GET")
+
+        basicMux.HandleFunc("/api/posts", mw.Auth(*auth, postHandle.AddPost)).Methods("POST")
+        basicMux.HandleFunc("/api/posts/", postHandle.GetAll).Methods("GET")
+        basicMux.HandleFunc("/api/posts/{category_name}", postHandle.GetByCategory).Methods("GET")
+
+        basicMux.HandleFunc("/api/post/{id}", postHandle.GetPost).Methods("GET")
+        basicMux.HandleFunc("/api/post/{id}", mw.WrapHeaders(mw.Auth(*auth, postHandle.AddComment))).Methods("POST")
+        basicMux.HandleFunc("/api/post/{id}", mw.Auth(*auth, postHandle.Delete)).Methods("DELETE")
+
+        basicMux.HandleFunc("/api/post/{id}/upvote", mw.Auth(*auth, postHandle.UpVote)).Methods("GET")
+        basicMux.HandleFunc("/api/post/{id}/downvote", mw.Auth(*auth, postHandle.DownVote)).Methods("GET")
+        basicMux.HandleFunc("/api/post/{id}/unvote", mw.Auth(*auth, postHandle.UnVote)).Methods("GET")
+        basicMux.HandleFunc("/api/post/{id}/{comment_id}", mw.Auth(*auth, commentHandle.Delete)).Methods("DELETE")
+
+        basicMux.HandleFunc("/api/test/user/{name}", authHandle.GetUser).Methods("GET")
+        basicMux.HandleFunc("/api/test/users", authHandle.GetAll).Methods("GET")
+
+        siteMux := mw.AccessLog(logger, basicMux)
+        siteMux = mw.PanicMiddleware(siteMux)
+
+        logger.Infow("server :8086 has started")
+        logger.Fatal(http.ListenAndServe(":8086", siteMux))</span>
+
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

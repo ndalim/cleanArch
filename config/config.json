@@ -1,0 +1,6 @@
+{
+  "auth_ttl": 3600,
+  "auth_salt": "reddit_pass_salt",
+  "auth_jwt_secret": "reddit_jwt_secret",
+  "redis_path": "redis://localhost:6379"
+}

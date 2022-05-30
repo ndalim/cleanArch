@@ -1,0 +1,18 @@
+mode: set
+redditapp/cmd/redditapp/main.go:46.39,51.16 3 0
+redditapp/cmd/redditapp/main.go:55.2,57.16 3 0
+redditapp/cmd/redditapp/main.go:61.2,63.16 3 0
+redditapp/cmd/redditapp/main.go:67.2,67.18 1 0
+redditapp/cmd/redditapp/main.go:51.16,53.3 1 0
+redditapp/cmd/redditapp/main.go:57.16,59.3 1 0
+redditapp/cmd/redditapp/main.go:63.16,65.3 1 0
+redditapp/cmd/redditapp/main.go:70.46,86.54 3 1
+redditapp/cmd/redditapp/main.go:89.2,90.16 2 1
+redditapp/cmd/redditapp/main.go:94.2,94.28 1 1
+redditapp/cmd/redditapp/main.go:86.54,88.3 1 0
+redditapp/cmd/redditapp/main.go:90.16,92.3 1 0
+redditapp/cmd/redditapp/main.go:98.13,101.16 2 0
+redditapp/cmd/redditapp/main.go:106.2,107.16 2 0
+redditapp/cmd/redditapp/main.go:111.2,172.53 37 0
+redditapp/cmd/redditapp/main.go:101.16,104.3 2 0
+redditapp/cmd/redditapp/main.go:107.16,110.3 2 0
